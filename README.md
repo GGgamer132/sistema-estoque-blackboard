@@ -10,7 +10,9 @@ Sistema de Controle de Estoque com Arquitetura Blackboard
 ## Como rodar
 
 1. Clone o repositório;
-2. Dentro da pasta do projeto, execute no terminal:
-    mvn clean install
-    mvn spring-boot:run 
+2. Na pasta do projeto, execute:
+```bash
+   mvn clean install
+   mvn spring-boot:run
+```
 3. Acesse http://localhost:8080
