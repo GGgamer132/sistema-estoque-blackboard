@@ -12,23 +12,19 @@ public class ProdutoService {
 
     @Autowired
     private ProdutoRepository produtoRepository;
-
-    // Obter todos os produtos
     public List<Produto> obterTodos() {
         return produtoRepository.findAll();
     }
 
-    // Obter um produto por ID
     public Optional<Produto> obterPorId(Long id) {
         return produtoRepository.findById(id);
     }
 
-    // Salvar um novo produto
+
     public Produto salvar(Produto produto) {
         return produtoRepository.save(produto);
     }
 
-    // Atualizar um produto
     public Produto atualizar(Long id, Produto produtoAtualizado) {
         return produtoRepository.findById(id).map(produto -> {
             produto.setNome(produtoAtualizado.getNome());
@@ -39,7 +35,6 @@ public class ProdutoService {
         }).orElseThrow(() -> new RuntimeException("Produto não encontrado"));
     }
 
-    // Deletar um produto
     public void deletar(Long id) {
         produtoRepository.deleteById(id);
     }
