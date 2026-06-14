@@ -299,3 +299,83 @@ tr.critico:hover td { background: #ffcdd2; }
     .perfis-container, .dashboard-lojas { flex-direction: column; align-items: center; }
     .form-row { flex-direction: column; }
 }
+
+/* ─── MODAL (Compra Avulsa) ─── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.55);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.aberto {
+    display: flex;
+}
+.modal {
+    background: var(--branco);
+    border-radius: var(--raio);
+    padding: 28px;
+    max-width: 520px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+.modal h3 {
+    font-size: 18px;
+    color: var(--azul);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--azul);
+}
+.modal-acoes {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+.resultado-compra {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: var(--raio);
+    padding: 16px;
+    margin-top: 16px;
+    color: #155724;
+}
+.resultado-compra h4 {
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+.resultado-compra .linha {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.resultado-compra .total {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 8px;
+    color: #155724;
+}
+
+/* ─── TABELA DE HISTÓRICO ─── */
+.tabela-historico { overflow-x: auto; }
+.tipo-compra-badge {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.tipo-transf-badge {
+    background: #fff3cd;
+    color: #856404;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}

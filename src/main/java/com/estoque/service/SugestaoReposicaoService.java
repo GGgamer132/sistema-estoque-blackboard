@@ -1,8 +1,8 @@
 package com.estoque.service;
-import com.estoque.model.Estoque;
-import com.estoque.model.SugestaoReposicao;
-import com.estoque.repository.EstoqueRepository;
-import com.estoque.repository.SugestaoReposicaoRepository;
+
+import com.estoque.dto.CompraAvulsoResponseDTO;
+import com.estoque.model.*;
+import com.estoque.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +18,26 @@ public class SugestaoReposicaoService {
     @Autowired
     private EstoqueRepository estoqueRepository;
 
+    @Autowired
+    private ProdutoRepository produtoRepository;
+
+    @Autowired
+    private LojaRepository lojaRepository;
+
+    @Autowired
+    private FornecedorCatalogoRepository fornecedorCatalogoRepository;
+
     public List<SugestaoReposicao> obterTodas() {
         return sugestaoRepository.findAll();
     }
 
     public List<SugestaoReposicao> obterPendentes() {
         return sugestaoRepository.findByStatus("PENDENTE");
+    }
+
+    // Retorna transferências e compras que já foram executadas (histórico)
+    public List<SugestaoReposicao> obterExecutadas() {
+        return sugestaoRepository.findByStatus("EXECUTADA");
     }
 
     public Optional<SugestaoReposicao> obterPorId(Long id) {
@@ -38,10 +52,6 @@ public class SugestaoReposicaoService {
         return atualizarStatus(id, "REJEITADA");
     }
 
-    /*
-     * Marca a sugestão como executada E atualiza o Blackboard com as novas
-     * quantidades de estoque, refletindo a ação que o gerente realizou.
-     */
     @Transactional
     public SugestaoReposicao marcarExecutada(Long id) {
         SugestaoReposicao sugestao = sugestaoRepository.findById(id)
@@ -56,30 +66,105 @@ public class SugestaoReposicaoService {
     }
 
     /**
-     * Executa a transferência entre lojas:
-     * - Loja de ORIGEM perde as unidades transferidas
-     * - Loja de DESTINO recebe as unidades transferidas
+     * Compra avulsa: o gerente compra produtos diretamente sem uma sugestão prévia.
+     * Executa imediatamente, atualizando o estoque e registrando o histórico.
      */
+    @Transactional
+    public CompraAvulsoResponseDTO compraAvulso(Long produtoId, Long lojaId, Integer quantidade) {
+
+        Produto produto = produtoRepository.findById(produtoId)
+            .orElseThrow(() -> new RuntimeException("Produto não encontrado: ID " + produtoId));
+        Loja loja = lojaRepository.findById(lojaId)
+            .orElseThrow(() -> new RuntimeException("Loja não encontrada: ID " + lojaId));
+
+        Estoque estoque = estoqueRepository.findByProdutoAndLoja(produto, loja)
+            .orElseThrow(() -> new RuntimeException(
+                "Estoque não encontrado para " + produto.getNome() + " na loja " + loja.getNome()));
+
+        // Busca o fornecedor mais barato para calcular o custo
+        List<FornecedorCatalogo> fornecedores = fornecedorCatalogoRepository.findByProduto(produto);
+        FornecedorCatalogo melhorFornecedor = null;
+        Double precoUnitario = 0.0;
+        Double totalCusto = 0.0;
+
+        if (!fornecedores.isEmpty()) {
+            melhorFornecedor = fornecedores.stream()
+                .min((a, b) -> a.getPrecoCompra().compareTo(b.getPrecoCompra()))
+                .orElse(null);
+            if (melhorFornecedor != null) {
+                precoUnitario = melhorFornecedor.getPrecoCompra();
+                totalCusto = precoUnitario * quantidade;
+            }
+        }
+
+        // Atualiza o estoque imediatamente
+        int novoEstoque = estoque.getQuantidadeAtual() + quantidade;
+        estoque.setQuantidadeAtual(novoEstoque);
+        estoqueRepository.save(estoque);
+
+        // Registra a compra no histórico como EXECUTADA
+        SugestaoReposicao compra = new SugestaoReposicao();
+        compra.setTipoAcao("ORDEM_COMPRA");
+        compra.setProduto(produto);
+        compra.setLojaDestino(loja);
+        compra.setQuantidadeRecomendada(quantidade);
+        compra.setStatus("EXECUTADA");
+
+        String justificativa = "Compra avulsa de " + quantidade + "x " + produto.getNome()
+            + " para " + loja.getNome() + ".";
+
+        if (melhorFornecedor != null) {
+            compra.setFornecedor(melhorFornecedor.getFornecedor());
+            justificativa += " Fornecedor: " + melhorFornecedor.getFornecedor().getNome()
+                + " | Preço unitário: R$ " + String.format("%.2f", precoUnitario)
+                + " | Total: R$ " + String.format("%.2f", totalCusto);
+        } else {
+            justificativa += " Nenhum fornecedor cadastrado para este produto.";
+        }
+
+        compra.setJustificativa(justificativa);
+        SugestaoReposicao salva = sugestaoRepository.save(compra);
+
+        System.out.println("[COMPRA AVULSA] " + quantidade + "x " + produto.getNome()
+            + " → " + loja.getNome() + " | Novo estoque: " + novoEstoque);
+
+        // Monta a resposta com todas as informações para o frontend
+        CompraAvulsoResponseDTO response = new CompraAvulsoResponseDTO();
+        response.setId(salva.getId());
+        response.setProdutoNome(produto.getNome());
+        response.setLojaNome(loja.getNome());
+        response.setQuantidade(quantidade);
+        response.setNovoEstoque(novoEstoque);
+        response.setPrecoUnitario(precoUnitario);
+        response.setTotalCusto(totalCusto);
+        response.setFornecedorNome(
+            melhorFornecedor != null
+                ? melhorFornecedor.getFornecedor().getNome()
+                : "Sem fornecedor cadastrado"
+        );
+
+        return response;
+    }
+
     private void executarTransferencia(SugestaoReposicao sugestao) {
         int quantidade = sugestao.getQuantidadeRecomendada();
-        // Atualiza o estoque da loja de ORIGEM (perde estoque)
         Estoque estoqueOrigem = estoqueRepository
             .findByProdutoAndLoja(sugestao.getProduto(), sugestao.getLojaOrigem())
             .orElseThrow(() -> new RuntimeException(
                 "Estoque de origem não encontrado para o produto "
                 + sugestao.getProduto().getNome()
                 + " na loja " + sugestao.getLojaOrigem().getNome()));
-        
+
         int novaQuantidadeOrigem = estoqueOrigem.getQuantidadeAtual() - quantidade;
         if (novaQuantidadeOrigem < 0) {
             throw new RuntimeException(
-                "Estoque insuficiente na loja de origem para realizar a transferência. "
+                "Estoque insuficiente na loja de origem. "
                 + "Disponível: " + estoqueOrigem.getQuantidadeAtual()
                 + " | Necessário: " + quantidade);
         }
         estoqueOrigem.setQuantidadeAtual(novaQuantidadeOrigem);
         estoqueRepository.save(estoqueOrigem);
-        // Atualiza o estoque da loja de DESTINO (recebe estoque)
+
         Estoque estoqueDestino = estoqueRepository
             .findByProdutoAndLoja(sugestao.getProduto(), sugestao.getLojaDestino())
             .orElseThrow(() -> new RuntimeException(
@@ -89,18 +174,13 @@ public class SugestaoReposicaoService {
 
         estoqueDestino.setQuantidadeAtual(estoqueDestino.getQuantidadeAtual() + quantidade);
         estoqueRepository.save(estoqueDestino);
+
         System.out.println("[BLACKBOARD] Transferência executada: "
             + quantidade + "x " + sugestao.getProduto().getNome()
             + " | De: " + sugestao.getLojaOrigem().getNome()
-            + " → Para: " + sugestao.getLojaDestino().getNome()
-            + " | Novo estoque origem: " + novaQuantidadeOrigem
-            + " | Novo estoque destino: " + estoqueDestino.getQuantidadeAtual());
+            + " → Para: " + sugestao.getLojaDestino().getNome());
     }
 
-    /*
-     * Executa a ordem de compra:
-     * - Loja de DESTINO recebe os produtos comprados do fornecedor
-     */
     private void executarOrdemCompra(SugestaoReposicao sugestao) {
         int quantidade = sugestao.getQuantidadeRecomendada();
         Estoque estoqueDestino = estoqueRepository
@@ -112,11 +192,11 @@ public class SugestaoReposicaoService {
 
         estoqueDestino.setQuantidadeAtual(estoqueDestino.getQuantidadeAtual() + quantidade);
         estoqueRepository.save(estoqueDestino);
+
         System.out.println("[BLACKBOARD] Ordem de compra executada: "
             + quantidade + "x " + sugestao.getProduto().getNome()
             + " | Fornecedor: " + sugestao.getFornecedor().getNome()
-            + " | Loja destino: " + sugestao.getLojaDestino().getNome()
-            + " | Novo estoque: " + estoqueDestino.getQuantidadeAtual());
+            + " | Loja destino: " + sugestao.getLojaDestino().getNome());
     }
 
     private SugestaoReposicao atualizarStatus(Long id, String novoStatus) {

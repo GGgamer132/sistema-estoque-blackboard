@@ -1,4 +1,6 @@
 package com.estoque.controller;
+
+import com.estoque.dto.CompraAvulsoRequestDTO;
 import com.estoque.model.SugestaoReposicao;
 import com.estoque.service.SugestaoReposicaoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,12 @@ public class SugestaoReposicaoController {
     @GetMapping("/pendentes")
     public List<SugestaoReposicao> obterPendentes() {
         return sugestaoService.obterPendentes();
+    }
+
+  
+    @GetMapping("/executadas")
+    public List<SugestaoReposicao> obterExecutadas() {
+        return sugestaoService.obterExecutadas();
     }
 
     @GetMapping("/{id}")
@@ -52,6 +60,20 @@ public class SugestaoReposicaoController {
     public ResponseEntity<?> marcarExecutada(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(sugestaoService.marcarExecutada(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+  
+    @PostMapping("/compra-avulso")
+    public ResponseEntity<?> compraAvulso(@RequestBody CompraAvulsoRequestDTO request) {
+        try {
+            return ResponseEntity.ok(sugestaoService.compraAvulso(
+                request.getProdutoId(),
+                request.getLojaId(),
+                request.getQuantidade()
+            ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
