@@ -5,8 +5,8 @@ INSERT INTO loja (nome, endereco) VALUES
 
 -- Produtos com limiares críticos definidos
 INSERT INTO produto (nome, categoria, preco_venda, limiar_critico) VALUES
-('Água Mineral 1.5L', 'Bebidas', 3.50, 20),
-('Feijão 1kg', 'Alimentos', 8.00, 15),
+('Água Mineral 1.5L', 'Bebidas', 3.50, 10),
+('Feijão 1kg', 'Alimentos', 8.00, 10),
 ('Arroz 5kg', 'Alimentos', 25.00, 10);
 
 -- Fornecedores
@@ -22,9 +22,9 @@ INSERT INTO fornecedor_catalogo (fornecedor_id, produto_id, preco_compra) VALUES
 
 -- Estoque inicial das lojas (a Loja Sul tem mais estoque para demonstrar transferência)
 INSERT INTO estoque (produto_id, loja_id, quantidade_atual) VALUES
-(1, 1, 25),
-(1, 2, 50),
-(2, 1, 18),
-(2, 2, 30),
+(1, 1, 20),
+(1, 2, 30),
+(2, 1, 15),
+(2, 2, 70),
 (3, 1, 12),
-(3, 2, 20);
+(3, 2, 60);
