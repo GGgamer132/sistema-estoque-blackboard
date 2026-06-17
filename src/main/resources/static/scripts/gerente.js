@@ -36,6 +36,31 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+async function cadastrarLoja() {
+    const nome = document.getElementById('loja-nome').value;
+    const endereco = document.getElementById('loja-endereco').value;
+
+    if (!nome) {
+        msg('msg-loja', '⚠️ Preencha o nome da loja.', 'erro');
+        return;
+    }
+    try {
+        const resp = await fetch('/api/lojas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, endereco })
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        msg('msg-loja', '✅ Loja cadastrada! Ela já aparece na tela inicial de seleção de perfil.');
+        ['loja-nome', 'loja-endereco'].forEach(id =>
+            document.getElementById(id).value = '');
+        carregarDropdownsModal(); // já atualiza o dropdown de loja do modal de compra avulsa
+    } catch (e) {
+        msg('msg-loja', `❌ ${e.message}`, 'erro');
+    }
+}
+
+
 // ─── Exibe mensagem temporária de feedback nos formulários ───
 function msg(elementId, texto, tipo = 'sucesso') {
     const el = document.getElementById(elementId);

@@ -140,7 +140,23 @@
         <!-- ═══ ABA 5: Cadastros ═══ -->
         <div id="tab-cadastros" class="tab-content">
             <h2 class="titulo-secao" style="margin-bottom:20px;">⚙️ Gerenciar Cadastros</h2>
-
+			<!-- Cadastrar Loja -->
+		    <div class="card">
+		        <h2>🏬 Cadastrar Nova Loja</h2>
+		        <div id="msg-loja"></div>
+		        <div class="form-row">
+		            <div class="form-group">
+		                <label>Nome</label>
+		                <input type="text" id="loja-nome" placeholder="Ex: Loja Leste">
+		            </div>
+		            <div class="form-group">
+		                <label>Endereço</label>
+		                <input type="text" id="loja-endereco" placeholder="Ex: Rua C, 300 - Zona Leste">
+		            </div>
+		        </div>
+		        <button class="btn azul" onclick="cadastrarLoja()">✅ Cadastrar Loja</button>
+		    </div>
+		    
            <!-- Cadastrar Produto -->
 			<div class="card">
 			    <h2>🛍️ Cadastrar Novo Produto</h2>

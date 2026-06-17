@@ -22,59 +22,87 @@
         <p>Cada perfil representa um módulo da arquitetura Blackboard</p>
     </div>
 
-    <!-- Os três cards de acesso -->
-    <div class="container">
-        <div class="perfis-container">
+    <!-- Os cards de acesso (lojas vêm do banco, Gerente é fixo) -->
+	<div class="container">
+	    <div class="perfis-container" id="perfis-container">
+	        <div class="loading">Carregando perfis...</div>
+	    </div>
+	</div>
+	
+	<script>
+	    // Escapa caracteres especiais para evitar que um nome de loja com aspas
+	    // ou outros símbolos quebre o HTML gerado dinamicamente
+	    function escapeHtml(str) {
+	        return String(str)
+	            .replace(/&/g, '&amp;')
+	            .replace(/</g, '&lt;')
+	            .replace(/>/g, '&gt;')
+	            .replace(/"/g, '&quot;')
+	            .replace(/'/g, '&#39;');
+	    }
+	
+	    // Busca todas as lojas cadastradas e monta um card para cada uma,
+	    // sempre adicionando o card fixo do Gerente por último.
+	    async function carregarPerfis() {
+	        const cont = document.getElementById('perfis-container');
+	        try {
+	            const resp = await fetch('/api/lojas');
+	            if (!resp.ok) throw new Error('Falha ao buscar lojas');
+	            const lojas = await resp.json();
+	
+	            let html = '';
+	
+	            lojas.forEach(loja => {
+	                const nome = escapeHtml(loja.nome);
+	                html += `
+	                    <div class="perfil-card" data-loja-id="${loja.id}" data-loja-nome="${nome}">
+	                        <div class="icone">🏬</div>
+	                        <h3>${nome}</h3>
+	                        <p class="subtitulo">Especialista de Loja</p>
+	                        <p class="descricao">
+	                            Visualize o estoque desta loja e registre as vendas realizadas.
+	                            Este perfil representa o módulo especialista da loja.
+	                        </p>
+	                        <button class="btn azul" style="width:100%">Entrar como ${nome}</button>
+	                    </div>`;
+	            });
 
-            <!-- Operador: Loja Norte -->
-            <div class="perfil-card" onclick="entrarLoja(1, 'Loja Norte')">
-                <div class="icone">🏬</div>
-                <h3>Loja Norte</h3>
-                <p class="subtitulo">Especialista de Loja</p>
-                <p class="descricao">
-                    Visualize o estoque da Loja Norte e registre as vendas realizadas.
-                    Este perfil representa o módulo especialista da Loja Norte.
-                </p>
-                <button class="btn azul" style="width:100%">Entrar como Loja Norte</button>
-            </div>
-
-            <!-- Operador: Loja Sul -->
-            <div class="perfil-card" onclick="entrarLoja(2, 'Loja Sul')">
-                <div class="icone">🏪</div>
-                <h3>Loja Sul</h3>
-                <p class="subtitulo">Especialista de Loja</p>
-                <p class="descricao">
-                    Visualize o estoque da Loja Sul e registre as vendas realizadas.
-                    Este perfil representa o módulo especialista da Loja Sul.
-                </p>
-                <button class="btn azul" style="width:100%">Entrar como Loja Sul</button>
-            </div>
-
-            <!-- Gerente -->
-            <div class="perfil-card" onclick="entrarGerente()">
-                <div class="icone">👔</div>
-                <h3>Gerente</h3>
-                <p class="subtitulo">Administrador da Rede</p>
-                <p class="descricao">
-                    Veja o estado do Blackboard, as sugestões automáticas do 
-                    Especialista de Reposição e gerencie cadastros.
-                </p>
-                <button class="btn verde" style="width:100%">Entrar como Gerente</button>
-            </div>
-
-        </div>
-    </div>
-
-    <script>
-        // Vai para a página da loja passando o ID e nome na URL
-        function entrarLoja(id, nome) {
-            window.location.href = `loja.html?id=${id}&nome=${encodeURIComponent(nome)}`;
-        }
-
-        // Vai para a página do gerente
-        function entrarGerente() {
-            window.location.href = 'gerente.html';
-        }
-    </script>
+	            html += `
+	                <div class="perfil-card" id="card-gerente">
+	                    <div class="icone">👔</div>
+	                    <h3>Gerente</h3>
+	                    <p class="subtitulo">Administrador da Rede</p>
+	                    <p class="descricao">
+	                        Veja o estado do Blackboard, as sugestões automáticas do
+	                        Especialista de Reposição e gerencie cadastros.
+	                    </p>
+	                    <button class="btn verde" style="width:100%">Entrar como Gerente</button>
+	                </div>`;
+	
+	            cont.innerHTML = html;
+	            cont.querySelectorAll('.perfil-card[data-loja-id]').forEach(card => {
+	                card.addEventListener('click', () => {
+	                    entrarLoja(card.dataset.lojaId, card.dataset.lojaNome);
+	                });
+	            });
+	            document.getElementById('card-gerente').addEventListener('click', entrarGerente);
+	
+	        } catch (e) {
+	            cont.innerHTML = `<div class="alerta erro">❌ Erro ao carregar perfis: ${e.message}</div>`;
+	        }
+	    }
+	
+	    // Vai para a página da loja passando o ID e nome na URL
+	    function entrarLoja(id, nome) {
+	        window.location.href = `loja.html?id=${id}&nome=${encodeURIComponent(nome)}`;
+	    }
+	
+	    // Vai para a página do gerente
+	    function entrarGerente() {
+	        window.location.href = 'gerente.html';
+	    }
+	
+	    carregarPerfis();
+	</script>
 </body>
 </html>
