@@ -98,19 +98,26 @@ function montarTabela(estoques, aprovadas) {
 }
 
 // ─── Preenche o dropdown de produtos para o formulário de venda ───
+
 async function carregarProdutosDropdown() {
     try {
-        const resp = await fetch('/api/produtos');
-        const produtos = await resp.json();
+        const resp = await fetch(`/api/estoque/loja/${lojaId}`);
+        if (!resp.ok) throw new Error('Falha ao buscar estoque da loja');
+
+        const estoques = await resp.json();
         const sel = document.getElementById('select-produto');
         sel.innerHTML = '<option value="">Selecione um produto...</option>';
-        produtos.forEach(p => {
-            sel.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
+        estoques.forEach(e => {
+            sel.innerHTML += `
+                <option value="${e.produto.id}">
+                    ${e.produto.nome}
+                </option>`;
         });
     } catch (e) {
-        console.error('Erro ao carregar produtos:', e);
+        console.error('Erro ao carregar produtos da loja:', e);
     }
 }
+
 
 // ─── Registra uma venda ───
 async function registrarVenda() {
